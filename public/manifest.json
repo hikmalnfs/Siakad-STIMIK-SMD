@@ -1,0 +1,16 @@
+{
+    "name": "Laravel",
+    "short_name": "Laravel",
+    "background_color": "#6777ef",
+    "display": "fullscreen",
+    "description": null,
+    "theme_color": "#6777ef",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

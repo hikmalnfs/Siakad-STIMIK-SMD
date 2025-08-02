@@ -1,0 +1,13 @@
+!gitignore
+logo/logo-vert-*
+logo/logo-hori-*
+absensi/*
+berita/*
+galeri/*
+gedung/*
+pengumuman/*
+presensi/*
+document/*
+profile/*.jpg
+profile/absen/*
+website/logo-*.*

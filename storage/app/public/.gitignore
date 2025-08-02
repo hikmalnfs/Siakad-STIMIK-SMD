@@ -1,0 +1,9 @@
+!.gitignore
+excel-files/*
+invoices/*
+news/*
+document/*.pdf
+uploads/*
+uploads/tugas/*
+album_covers/*
+images/gallery/*
