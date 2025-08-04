@@ -304,7 +304,7 @@
                                 <td class="text-center">{{ $i + 1 }}</td>
                                 <td>
                                     <div class="fw-semibold">{{ $matkul->name ?? 'Mata kuliah tidak ditemukan' }}</div>
-                                    <small class="text-muted">{{ $matkul->code ?? '-' }}</small>
+                                    <small class="text-muted">{{ $matkul->kode_matkul ?? '-' }}</small>
                                 </td>
                                 <td class="text-center">{{ $matkul->sks ?? '-' }}</td>
                                 <td>
