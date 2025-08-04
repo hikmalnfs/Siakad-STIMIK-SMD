@@ -4,23 +4,6 @@
 <a href="changelog.md"> Siakad | v2.0 - Changelogs</a>
 <br>
 <span>Latest Update: 13 Juni 2025</span>
-</p>
-
-<p align="center">
-<a href="https://github.com/mjaya69703"><img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
-<a href="https://facebook.com/kyouma052"><img src="https://img.shields.io/badge/Facebook-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white" alt="Facebook"></a>
-<a href="https://instagram.com/mjaya69703"><img src="https://img.shields.io/badge/Instagram-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white" alt="Instagram"></a>
-<a href="mailto:mjaya69703@gmail.com"><img src="https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail"></a>
-</p>
-
-<p align="center">
-<a href="https://github.com/mjaya69703/siakad-pt.internal-dev.id/fork">
-<img src="https://img.shields.io/badge/Contribute-Fork%20Project-blue?style=for-the-badge&logo=github" alt="Fork Project">
-</a>
-<a href="https://github.com/mjaya69703/siakad-pt.internal-dev.id/issues">
-<img src="https://img.shields.io/badge/Report%20Issue-GitHub%20Issues-red?style=for-the-badge&logo=github" alt="Report Issue">
-</a>
-</p>
 
 
 ## Status Pengembangan
@@ -39,13 +22,13 @@
 > Fitur-fitur lainnya masih dalam tahap pengembangan dan akan diimplementasikan secara bertahap.
 
 ## Preview Images
-<img src="./storage/demo/demo-homepage.png" style="width: 100%;" align="center">
+<img src="./storage/demo/" style="width: 100%;" align="center">
 <p align="center">Halaman Utama</p>
 <hr>
-<img src="./storage/demo/demo-signin.png" style="width: 100%;" align="center">
+<img src="./storage/demo/" style="width: 100%;" align="center">
 <p align="center">Halaman Login Authentikasi</p>
 <hr>
-<img src="./storage/demo/demo-profile.png" style="width: 100%;" align="center">
+<img src="./storage/demo/" style="width: 100%;" align="center">
 <p align="center">Halaman Profile User</p>
 
 ## Tentang Siakad
