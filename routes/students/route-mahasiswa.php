@@ -62,7 +62,7 @@ Route::group(['prefix' => 'mahasiswa', 'middleware' => ['mhs-access:Mahasiswa Ak
 
     // AJAX ASYNC
     Route::get('/ajax/getTicketLastReply/{code}',[App\Http\Controllers\Mahasiswa\Pages\SupportController::class, 'AjaxLastReply'])->name('ajax.support.ticket-last-reply');
-
+    Route::post('/krs/calc-sks', [App\Http\Controllers\Mahasiswa\KrsController::class, 'calcSks'])->name('krs.calcSks');
     Route::get('/ajax/getTagihan',[App\Http\Controllers\Mahasiswa\HomeController::class, 'tagihanIndexAjax'])->name('ajax-tagihan-index');
 
     // Menampilkan halaman absensi berdasarkan kode jadwal

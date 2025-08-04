@@ -12,7 +12,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Akademik\TahunAkademik;
 use App\Models\Akademik\JadwalKuliah;
 use App\Models\Akademik\Krs;
+use App\Models\Akademik\MataKuliah;
 use App\Models\Pengaturan\WebSetting;
+use App\Models\Mahasiswa;
 
 class KrsController extends Controller
 {
@@ -20,14 +22,14 @@ class KrsController extends Controller
     {
         $user = Auth::guard('mahasiswa')->user();
 
-        // Ambil daftar tahun akademik untuk filter
+        // Daftar tahun akademik untuk filter
         $tahunAkademikList = TahunAkademik::orderBy('name', 'desc')->get();
 
-        // Filter tahun akademik
+        // Filter tahun akademik dan semester
         $filterTaId = $request->input('tahun_akademik');
         $filterSemester = $request->input('semester'); // Ganjil / Genap
 
-        // Jika tidak pilih tahun akademik, default ke yang aktif
+        // Ambil Tahun Akademik default aktif jika filter kosong
         if ($filterTaId) {
             $ta = TahunAkademik::find($filterTaId);
         } else {
@@ -43,14 +45,12 @@ class KrsController extends Controller
         $query = Krs::with(['jadwal.mataKuliah', 'jadwal.kelas', 'jadwal.dosen', 'jadwal.ruang'])
             ->where('users_id', $user->id);
 
-        // Filter tahun akademik di relasi jadwal
         if ($filterTaId) {
             $query->whereHas('jadwal', function ($q) use ($filterTaId) {
                 $q->where('tahun_akademik_id', $filterTaId);
             });
         }
 
-        // Filter semester (Ganjil/Genap)
         if ($filterSemester) {
             $query->whereHas('jadwal', function ($q) use ($filterSemester) {
                 $q->where('semester', $filterSemester);
@@ -59,129 +59,135 @@ class KrsController extends Controller
 
         $items = $query->get();
 
-        $totalSks = $items->sum(fn($i) => $i->jadwal->mataKuliah->sks ?? 0);
+        // Total SKS dari bsks mata kuliah yang diambil
+        $totalSks = $items->sum(function ($item) {
+            return $item->jadwal->mataKuliah->bsks ?? 0;
+        });
+
         $maxSks = 24;
 
         return view('mahasiswa.krs.index', [
-            'web'             => WebSetting::find(1),
-            'mahasiswa'       => $user,
-            'ta'              => $ta,
-            'items'           => $items,
-            'fakultas'        => $user->kelas?->pstudi,
-            'dosen'           => $user->dosenPa,
-            'totalSks'        => $totalSks,
-            'maxSks'          => $maxSks,
-            'prefix'          => 'mahasiswa.',
+            'web'               => WebSetting::find(1),
+            'mahasiswa'         => $user,
+            'ta'                => $ta,
+            'items'             => $items,
+            'fakultas'          => $user->kelas?->pstudi,
+            'dosen'             => $user->dosenPa,
+            'totalSks'          => $totalSks,
+            'maxSks'            => $maxSks,
+            'prefix'            => 'mahasiswa.',
             'tahunAkademikList' => $tahunAkademikList,
-            'filterTaId'      => $filterTaId,
-            'filterSemester'  => $filterSemester,
+            'filterTaId'        => $filterTaId,
+            'filterSemester'    => $filterSemester,
         ]);
     }
 
     public function create(Request $request)
     {
         $user = Auth::guard('mahasiswa')->user();
-
         $allTa = TahunAkademik::orderBy('name', 'desc')->get();
 
-        $selectedTa = $request->has('tahun_akademik_id')
+        $selectedTa = $request->input('tahun_akademik_id')
             ? TahunAkademik::find($request->tahun_akademik_id)
             : TahunAkademik::where('status', 'Aktif')->first();
 
         if (!$selectedTa) {
-            Alert::warning('Tidak Ada Tahun Akademik Aktif', 'Silakan hubungi admin.');
+            Alert::warning('Tidak Ada Tahun Akademik Aktif');
             return back();
         }
 
-        $jadwalKuliah = JadwalKuliah::with(['mataKuliah', 'kelas', 'dosen', 'ruang', 'waktuKuliah'])
+        $mahasiswa = Mahasiswa::with('kelas')->find($user->id);
+        if (!$mahasiswa || !$mahasiswa->kelas) {
+            Alert::error('Data Tidak Lengkap', 'Kelas mahasiswa belum terdaftar.');
+            return back();
+        }
+
+        // Ambil jadwal kuliah yang aktif, semester sesuai kelas mahasiswa dan tahun akademik yg dipilih
+        $jadwalKuliah = JadwalKuliah::with('mataKuliah')
             ->where('tahun_akademik_id', $selectedTa->id)
             ->whereHas('mataKuliah', fn($q) => $q->where('status', 'Aktif'))
+            ->whereHas('kelas', fn($q) => $q->where('kelas.id', $mahasiswa->kelas->id))
             ->get();
 
-        $krsTaken = Krs::where('users_id', $user->id)
+        // Ambil mata kuliah unik dari jadwal kuliah (untuk pilihan matkul)
+        $mataKuliahUnique = $jadwalKuliah->pluck('mataKuliah')->unique('id')->values();
+
+        // Ambil matkul yang sudah diambil (di KRS) oleh mahasiswa pada tahun akademik ini
+        $krsTakenJadwalIds = Krs::where('users_id', $user->id)
             ->where('tahun_akademik_id', $selectedTa->id)
-            ->pluck('jadwal_id')
+            ->pluck('jadwal_id') // simpan jadwal_id karena di KRS ini foreign keynya ke jadwal
             ->toArray();
 
         return view('mahasiswa.krs.create', [
-            'web'          => WebSetting::find(1),
+            'web' => WebSetting::find(1),
+            'mataKuliahUnique' => $mataKuliahUnique,
             'jadwalKuliah' => $jadwalKuliah,
-            'ta'           => $selectedTa,
-            'allTa'        => $allTa,
-            'krsTaken'     => $krsTaken,
-            'prefix'       => 'mahasiswa.',
+            'krsTakenJadwalIds' => $krsTakenJadwalIds,
+            'ta' => $selectedTa,
+            'allTa' => $allTa,
+            'prefix' => 'mahasiswa.',
         ]);
     }
 
-public function store(Request $request)
-{
-    $user = Auth::guard('mahasiswa')->user();
 
-    $taId = $request->input('tahun_akademik_id');
-    $ta = TahunAkademik::find($taId);
+    public function store(Request $request)
+    {
+        $user = Auth::guard('mahasiswa')->user();
 
-    if (!$ta) {
-        Alert::error('Error', 'Tahun Akademik tidak valid.');
-        return back()->withInput();
-    }
+        $taId = $request->input('tahun_akademik_id');
+        $ta = TahunAkademik::find($taId);
 
-    $jadwalIds = $request->input('jadwal_kuliah_id', []);
-
-    if (empty($jadwalIds)) {
-        Alert::error('Gagal', 'Kamu belum memilih mata kuliah (KRS).');
-        return back()->withInput();
-    }
-
-    $currentKrs = Krs::where('users_id', $user->id)
-        ->where('tahun_akademik_id', $ta->id)
-        ->whereIn('status', ['Menunggu', 'Disetujui'])
-        ->with('jadwal.mataKuliah')
-        ->get();
-
-    $sksNow = $currentKrs->sum(fn($item) => $item->jadwal->mataKuliah->sks ?? 0);
-
-    // Ambil wali_id dari kelas mahasiswa
-    $waliId = $user->kelas?->wali_id;
-
-    foreach ($jadwalIds as $jadwalId) {
-        $jadwal = JadwalKuliah::with('mataKuliah')->find($jadwalId);
-
-        if (!$jadwal || !$jadwal->mataKuliah || $jadwal->mataKuliah->status !== 'Aktif' || $jadwal->tahun_akademik_id != $ta->id) {
-            continue;
-        }
-
-        $alreadyExists = Krs::where('users_id', $user->id)
-            ->where('jadwal_id', $jadwalId)
-            ->where('tahun_akademik_id', $ta->id)
-            ->whereIn('status', ['Menunggu', 'Disetujui'])
-            ->exists();
-
-        if ($alreadyExists) {
-            continue;
-        }
-
-        $sksNew = $jadwal->mataKuliah->sks ?? 0;
-
-        if (($sksNow + $sksNew) > 24) {
-            Alert::error('SKS Melebihi Batas', 'Total SKS maksimal adalah 24.');
+        if (!$ta) {
+            Alert::error('Tahun Akademik tidak valid.');
             return back()->withInput();
         }
 
-        Krs::create([
-            'users_id'          => $user->id,
-            'jadwal_id'         => $jadwalId,
-            'tahun_akademik_id' => $ta->id,
-            'status'            => 'Menunggu',
-            'wali_id'           => $waliId,  // <-- disini diisi otomatis
-        ]);
+        $jadwalIds = $request->input('jadwal_kuliah_id', []);
+        if (empty($jadwalIds)) {
+            Alert::error('Gagal', 'Kamu belum memilih mata kuliah.');
+            return back()->withInput();
+        }
 
-        $sksNow += $sksNew;
+        $currentKrs = Krs::where('users_id', $user->id)
+            ->where('tahun_akademik_id', $ta->id)
+            ->whereIn('status', ['Menunggu', 'Disetujui'])
+            ->with('jadwal.mataKuliah')
+            ->get();
+
+        $sksNow = $currentKrs->sum(fn($item) => $item->jadwal->mataKuliah->bsks ?? 0);
+        $waliId = $user->kelas?->wali_id;
+
+        foreach ($jadwalIds as $jadwalId) {
+            $jadwal = JadwalKuliah::with('mataKuliah')->find($jadwalId);
+            if (!$jadwal || !$jadwal->mataKuliah || $jadwal->mataKuliah->status !== 'Aktif') continue;
+
+            $alreadyExists = Krs::where('users_id', $user->id)
+                ->where('jadwal_id', $jadwalId)
+                ->where('tahun_akademik_id', $ta->id)
+                ->exists();
+
+            if ($alreadyExists) continue;
+
+            $sksNew = $jadwal->mataKuliah->bsks ?? 0;
+            if (($sksNow + $sksNew) > 24) {
+                Alert::error('SKS Melebihi Batas', 'Total SKS maksimal adalah 24.');
+                return back()->withInput();
+            }
+
+            Krs::create([
+                'users_id'          => $user->id,
+                'jadwal_id'         => $jadwalId,
+                'tahun_akademik_id' => $ta->id,
+                'status'            => 'Menunggu',
+                'wali_id'           => $waliId,
+            ]);
+
+            $sksNow += $sksNew;
+        }
+
+        Alert::success('Berhasil', 'Pengajuan KRS berhasil dikirim.');
+        return redirect()->route('mahasiswa.krs.index');
     }
-
-    Alert::success('Berhasil', 'Pengajuan KRS berhasil dikirim.');
-    return redirect()->route('mahasiswa.krs.index');
-}
-
 
     public function show($id)
     {
@@ -222,4 +228,26 @@ public function store(Request $request)
         Alert::success('Berhasil', 'KRS berhasil dihapus.');
         return back();
     }
+        // Fungsi untuk hitung total SKS dari jadwal kuliah yang dipilih (Ajax)
+    public function calcSks(Request $request)
+    {
+        $jadwalIds = $request->input('jadwal_kuliah_id', []);
+
+        if (!is_array($jadwalIds) || empty($jadwalIds)) {
+            return response()->json(['total_sks' => 0]);
+        }
+
+        $totalSks = 0;
+
+        $jadwals = JadwalKuliah::with(['mataKuliah'])->whereIn('id', $jadwalIds)->get();
+
+        foreach ($jadwals as $jadwal) {
+            if ($jadwal->mataKuliah && $jadwal->mataKuliah->bsks) {
+                $totalSks += (int) $jadwal->mataKuliah->bsks;
+            }
+        }
+
+        return response()->json(['total_sks' => $totalSks]);
+    }
+
 }

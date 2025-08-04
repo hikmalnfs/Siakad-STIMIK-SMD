@@ -217,13 +217,13 @@
                                         <select class="form-select" name="type" id="type" required>
                                             <option value="">Pilih Departemen</option>
                                             <option value="0">Web Administrator</option>
-                                            {{-- <option value="1">Departement Akademik</option>
+                                            <option value="1">Departement Akademik</option>
                                             <option value="2">Departement Keuangan</option>
                                             <option value="3">Departement Kemahasiswaan</option>
                                             <option value="4">Departement Infrastruktur & IT</option>
                                             <option value="5">Departement Perpustakaan</option>
                                             <option value="6">Departement Umum</option>
-                                            <option value="7">Departement Admisi</option> --}}
+                                            <option value="7">Departement Admisi</option>
                                         </select>
                                         @error('type')
                                             <small class="text-danger">{{ $message }}</small>
@@ -373,13 +373,13 @@
                                     <select class="form-select" name="type" id="edit_type{{ $item->code }}" required>
                                         <option value="">Pilih Departemen</option>
                                         <option value="0" {{ $item->raw_type == 0 ? 'selected' : '' }}>Web Administrator</option>
-                                        {{-- <option value="1" {{ $item->raw_type == 1 ? 'selected' : '' }}>Departement Akademik</option>
+                                        <option value="1" {{ $item->raw_type == 1 ? 'selected' : '' }}>Departement Akademik</option>
                                         <option value="2" {{ $item->raw_type == 2 ? 'selected' : '' }}>Departement Keuangan</option>
                                         <option value="3" {{ $item->raw_type == 3 ? 'selected' : '' }}>Departement Kemahasiswaan</option>
                                         <option value="4" {{ $item->raw_type == 4 ? 'selected' : '' }}>Departement Infrastruktur & IT</option>
                                         <option value="5" {{ $item->raw_type == 5 ? 'selected' : '' }}>Departement Perpustakaan</option>
                                         <option value="6" {{ $item->raw_type == 6 ? 'selected' : '' }}>Departement Umum</option>
-                                        <option value="7" {{ $item->raw_type == 7 ? 'selected' : '' }}>Departement Admisi</option> --}}
+                                        <option value="7" {{ $item->raw_type == 7 ? 'selected' : '' }}>Departement Admisi</option>
                                     </select>
                                     @error('type')
                                         <small class="text-danger">{{ $message }}</small>

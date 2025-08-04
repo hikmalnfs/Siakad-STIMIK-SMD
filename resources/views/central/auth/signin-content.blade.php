@@ -94,7 +94,7 @@
                 <p>SISTEM INFORMASI AKADEMIK STIMIK SAMARINDA</p>
                 <button class="btn transparent" id="sign-up-btn">Kembali</button>
             </div>
-            <img src="{{ asset('sipenmaru/images/LOGO-STIMIK.PNG') }}" class="image" alt="Logo" />
+            <img src="{{ asset('LOGO-STIMIK.PNG') }}" class="image" alt="Logo" />
         </div>
 
         <div class="panel right-panel">
@@ -103,7 +103,7 @@
                 <p>Silahkan masuk jika anda telah memiliki akun.</p>
                 <button class="btn transparent" id="sign-in-btn">Masuk</button>
             </div>
-            <img src="{{ asset('sipenmaru/images/register.svg') }}" class="image" alt="Register" />
+            <img src="{{ asset('register.svg') }}" class="image" alt="Register" />
         </div>
     </div>
 </div>

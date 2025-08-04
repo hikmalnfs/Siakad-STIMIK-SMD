@@ -52,5 +52,5 @@ class Krs extends Model
         return $this->belongsTo(Dosen::class, 'wali_id');
     }
 
-    
+        
 }

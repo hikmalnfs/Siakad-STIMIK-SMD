@@ -1,11 +1,9 @@
 <?php
-
 namespace App\Models\Akademik;
-// USE SYSTEM
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasLogAktivitas;
-// USE MODELS
 use App\Models\Akademik\ProgramStudi;
 use App\Models\Akademik\Kurikulum;
 use App\Models\Dosen;
@@ -13,7 +11,6 @@ use App\Models\Dosen;
 class MataKuliah extends Model
 {
     use SoftDeletes, HasLogAktivitas;
-
 
     protected $table = 'mata_kuliahs';
     protected $guarded = [];
@@ -52,10 +49,9 @@ class MataKuliah extends Model
     {
         return $this->belongsTo(Dosen::class, 'dosen3_id');
     }
-    
-    public function dosen()
-    {
-        return $this->belongsTo(Dosen::class);
-    }
 
+    public function getSksAttribute()
+    {
+        return $this->bsks;
+    }
 }

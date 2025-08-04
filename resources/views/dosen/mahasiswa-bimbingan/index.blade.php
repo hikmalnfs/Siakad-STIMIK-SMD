@@ -48,7 +48,7 @@
                                 <td>{{ $mhs->kelas->name ?? '-' }}</td>
                                 <td>
                                     @php
-                                        $status = $mhs->status_akademik;
+                                        $status = $mhs->status;
                                     @endphp
                                     <span class="badge 
                                         {{ $status === 'Aktif' ? 'bg-success' : 

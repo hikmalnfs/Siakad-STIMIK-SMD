@@ -13,11 +13,11 @@
             <div class="card">
 
                 {{-- Header --}}
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-primary">
+                    <h5 class="card-title mb-0 text-white">
                         Absensi - Kelas: {{ $jadwal->code ?? 'Kode tidak tersedia' }} - {{ $jadwal->matkul->nama ?? 'Mata Kuliah tidak ditemukan' }}
                     </h5>
-                    <a href="@yield('urlmenu')" class="btn btn-warning">
+                    <a href="@yield('urlmenu')" class="btn btn-light">
                         <i class="fa-solid fa-backward"></i> Kembali
                     </a>
                 </div>
@@ -26,15 +26,21 @@
 
                     {{-- Notifikasi --}}
                     @if (session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     @elseif (session('error'))
-                        <div class="alert alert-danger">{{ session('error') }}</div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fa-solid fa-circle-exclamation me-2"></i> {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     @endif
 
                     {{-- Tabel Kontrol Buka/Tutup Pertemuan --}}
                     <div class="table-responsive absensi-scroll mb-4">
                         <table class="table table-bordered table-sm text-center align-middle" id="controlTable">
-                            <thead class="bg-light">
+                            <thead class="bg-primary text-white">
                                 <tr>
                                     <th>Pertemuan</th>
                                     @for ($i = 1; $i <= 16; $i++)
@@ -44,7 +50,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Status</td>
+                                    <td class="bg-light">Status</td>
                                     @for ($i = 1; $i <= 16; $i++)
                                         @php
                                             $status = $absensiStatus->firstWhere('pertemuan', $i);
@@ -58,7 +64,7 @@
                                     @endfor
                                 </tr>
                                 <tr>
-                                    <td>Aksi</td>
+                                    <td class="bg-light">Aksi</td>
                                     @for ($i = 1; $i <= 16; $i++)
                                         @php
                                             $status = $absensiStatus->firstWhere('pertemuan', $i);
@@ -84,7 +90,7 @@
                         @csrf
                         <div class="table-responsive absensi-scroll">
                             <table class="table table-bordered table-sm mb-0" id="absensiTable">
-                                <thead class="text-center bg-light align-middle">
+                                <thead class="text-center bg-primary text-white align-middle">
                                     <tr>
                                         <th>#</th>
                                         <th>NIM</th>
@@ -97,9 +103,9 @@
                                 <tbody>
                                     @forelse ($mahasiswas ?? [] as $index => $mhs)
                                         <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td>{{ $mhs->numb_nim ?? '-' }}</td>
-                                            <td class="text-start">{{ $mhs->mhs_name ?? $mhs->name ?? '-' }}</td>
+                                            <td class="bg-light">{{ $index + 1 }}</td>
+                                            <td class="bg-light">{{ $mhs->numb_nim ?? '-' }}</td>
+                                            <td class="text-start bg-light">{{ $mhs->mhs_name ?? $mhs->name ?? '-' }}</td>
                                             @for ($i = 1; $i <= 16; $i++)
                                                 @php
                                                     $value = $absensiData[$mhs->id][$i] ?? null;
@@ -172,7 +178,9 @@
                         </div>
 
                         <div class="mt-3 text-end">
-                            <button type="submit" class="btn btn-primary">Simpan Absensi</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Simpan Absensi
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -187,6 +195,8 @@
     .absensi-scroll {
         overflow-x: auto;
         width: 100%;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
     }
 
     #controlTable, #absensiTable {
@@ -200,21 +210,20 @@
         white-space: nowrap;
         vertical-align: middle;
         text-align: center;
-        padding: 6px 10px;
+        padding: 8px 12px;
         font-size: 14px;
     }
 
     td select {
         width: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
     }
 
     .btn-sm {
-        padding: 2px 8px;
+        padding: 4px 10px;
         font-size: 12px;
-    }
-
-    .table thead th {
-        background-color: #f8f9fa;
+        border-radius: 4px;
     }
 
     .badge {
@@ -222,6 +231,27 @@
         padding: 6px 10px;
         display: inline-block;
         min-width: 60px;
+        border-radius: 4px;
+    }
+
+    .table thead th {
+        background-color: #435ebe;
+        color: white;
+        font-weight: 600;
+    }
+
+    .bg-primary {
+        background-color: #435ebe !important;
+    }
+
+    .btn-primary {
+        background-color: #435ebe;
+        border-color: #435ebe;
+    }
+
+    .btn-primary:hover {
+        background-color: #3a51a8;
+        border-color: #3a51a8;
     }
 </style>
 @endsection

@@ -37,6 +37,10 @@ return [
             'provider' => 'dosens',
         ],
     ],
+        'akademik' => [
+            'driver' => 'session',
+            'provider' => 'akademiks',
+        ],
 
     /*
     |--------------------------------------------------------------------------
@@ -57,11 +61,12 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\Dosen::class,
         ],
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
+        'akademiks' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+            'conditions' => ['type' => 1], // Hanya user dengan type 1 (Departement Akademik)
+        ],
 
     /*
     |--------------------------------------------------------------------------
@@ -84,6 +89,12 @@ return [
         ],
         'dosens' => [
             'provider' => 'dosens',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'akademiks' => [
+            'provider' => 'akademiks',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,

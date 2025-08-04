@@ -428,258 +428,257 @@ public function autoGenerateAll(Request $request)
         return redirect()->back()->with('error', 'Gagal generate jadwal: ' . $e->getMessage());
     }
 }
-
-public function cekBentrokJadwal($ruangId, $hari, $jamMulai, $jamSelesai, $dosenId, $kelasId, $tahunAkademikId)
-{
-    return JadwalKuliah::where('tahun_akademik_id', $tahunAkademikId)
-        ->where('hari', $hari)
-        ->where(function($query) use ($ruangId, $dosenId, $kelasId, $jamMulai, $jamSelesai) {
-            $query->where(function($q) use ($ruangId, $jamMulai, $jamSelesai) {
-                $q->where('ruang_id', $ruangId)
-                  ->whereHas('waktuKuliah', function ($wq) use ($jamMulai, $jamSelesai) {
-                      $wq->where(function ($wt) use ($jamMulai, $jamSelesai) {
-                          $wt->where('time_start', '<', $jamSelesai)
-                             ->where('time_ended', '>', $jamMulai);
-                      });
-                  });
-            })
-            ->orWhere(function ($q) use ($dosenId, $jamMulai, $jamSelesai) {
-                $q->where('dosen_id', $dosenId)
-                  ->whereHas('waktuKuliah', function ($wq) use ($jamMulai, $jamSelesai) {
-                      $wq->where(function ($wt) use ($jamMulai, $jamSelesai) {
-                          $wt->where('time_start', '<', $jamSelesai)
-                             ->where('time_ended', '>', $jamMulai);
-                      });
-                  });
-            })
-            ->orWhere(function ($q) use ($kelasId) {
-                $q->whereHas('kelas', function ($kq) use ($kelasId) {
-                    $kq->where('kelas.id', $kelasId);
+    public function cekBentrokJadwal($ruangId, $hari, $jamMulai, $jamSelesai, $dosenId, $kelasId, $tahunAkademikId)
+    {
+        return JadwalKuliah::where('tahun_akademik_id', $tahunAkademikId)
+            ->where('hari', $hari)
+            ->where(function($query) use ($ruangId, $dosenId, $kelasId, $jamMulai, $jamSelesai) {
+                $query->where(function($q) use ($ruangId, $jamMulai, $jamSelesai) {
+                    $q->where('ruang_id', $ruangId)
+                    ->whereHas('waktuKuliah', function ($wq) use ($jamMulai, $jamSelesai) {
+                        $wq->where(function ($wt) use ($jamMulai, $jamSelesai) {
+                            $wt->where('time_start', '<', $jamSelesai)
+                                ->where('time_ended', '>', $jamMulai);
+                        });
+                    });
+                })
+                ->orWhere(function ($q) use ($dosenId, $jamMulai, $jamSelesai) {
+                    $q->where('dosen_id', $dosenId)
+                    ->whereHas('waktuKuliah', function ($wq) use ($jamMulai, $jamSelesai) {
+                        $wq->where(function ($wt) use ($jamMulai, $jamSelesai) {
+                            $wt->where('time_start', '<', $jamSelesai)
+                                ->where('time_ended', '>', $jamMulai);
+                        });
+                    });
+                })
+                ->orWhere(function ($q) use ($kelasId) {
+                    $q->whereHas('kelas', function ($kq) use ($kelasId) {
+                        $kq->where('kelas.id', $kelasId);
+                    });
                 });
-            });
-        })
-        ->exists();
-}
+            })
+            ->exists();
+    }
 
-public function cekBentrokPreview($jadwalCache, $ruangId, $hari, $jamMulai, $jamSelesai, $dosenId, $kelasId)
-{
-    foreach ($jadwalCache as $jadwal) {
-        if (
-            $jadwal['hari'] == $hari &&
-            (
-                $jadwal['ruang_id'] == $ruangId ||
-                $jadwal['dosen_id'] == $dosenId ||
-                $jadwal['kelas_id'] == $kelasId
-            )
-        ) {
-            // Cek overlap waktu
+    public function cekBentrokPreview($jadwalCache, $ruangId, $hari, $jamMulai, $jamSelesai, $dosenId, $kelasId)
+    {
+        foreach ($jadwalCache as $jadwal) {
             if (
-                $jadwal['jam_mulai'] < $jamSelesai &&
-                $jadwal['jam_selesai'] > $jamMulai
+                $jadwal['hari'] == $hari &&
+                (
+                    $jadwal['ruang_id'] == $ruangId ||
+                    $jadwal['dosen_id'] == $dosenId ||
+                    $jadwal['kelas_id'] == $kelasId
+                )
             ) {
-                return true; // bentrok
+                // Cek overlap waktu
+                if (
+                    $jadwal['jam_mulai'] < $jamSelesai &&
+                    $jadwal['jam_selesai'] > $jamMulai
+                ) {
+                    return true; // bentrok
+                }
             }
         }
-    }
-    return false; // tidak bentrok
-}
-
-public function storeGeneratedSchedule(Request $request)
-{
-    $request->validate([
-        'tahun_akademik_id' => 'required|exists:tahun_akademiks,id',
-        'tanggal' => 'nullable|date',
-    ]);
-
-    $jadwalPreview = session('jadwal_preview', []);
-
-    if (empty($jadwalPreview)) {
-        return redirect()->back()->with('error', 'Tidak ada jadwal untuk disimpan.');
+        return false; // tidak bentrok
     }
 
-    DB::beginTransaction();
+    public function storeGeneratedSchedule(Request $request)
+    {
+        $request->validate([
+            'tahun_akademik_id' => 'required|exists:tahun_akademiks,id',
+            'tanggal' => 'nullable|date',
+        ]);
 
-    try {
-        foreach ($jadwalPreview as $jadwal) {
-            $jadwalModel = JadwalKuliah::create([
-                'code' => $jadwal['code'],
-                'dosen_id' => $jadwal['dosen_id'],
-                'ruang_id' => $jadwal['ruang_id'],
-                'matkul_id' => $jadwal['matkul_id'],
-                'jenis_kelas_id' => $jadwal['jenis_kelas_id'],
-                'bsks' => $jadwal['bsks'],
-                'pertemuan' => $jadwal['pertemuan'],
-                'hari' => $jadwal['hari'],
-                'metode' => $jadwal['metode'],
-                'tanggal' => $jadwal['tanggal'],
-                'tahun_akademik_id' => $jadwal['tahun_akademik_id'],
-                'created_by' => Auth::id(),
-            ]);
+        $jadwalPreview = session('jadwal_preview', []);
 
-            $jadwalModel->kelas()->attach($jadwal['kelas_id']);
-            $jadwalModel->waktuKuliah()->attach($jadwal['waktu_id']);
+        if (empty($jadwalPreview)) {
+            return redirect()->back()->with('error', 'Tidak ada jadwal untuk disimpan.');
         }
 
-        DB::commit();
+        DB::beginTransaction();
 
-        session()->forget('jadwal_preview');
+        try {
+            foreach ($jadwalPreview as $jadwal) {
+                $jadwalModel = JadwalKuliah::create([
+                    'code' => $jadwal['code'],
+                    'dosen_id' => $jadwal['dosen_id'],
+                    'ruang_id' => $jadwal['ruang_id'],
+                    'matkul_id' => $jadwal['matkul_id'],
+                    'jenis_kelas_id' => $jadwal['jenis_kelas_id'],
+                    'bsks' => $jadwal['bsks'],
+                    'pertemuan' => $jadwal['pertemuan'],
+                    'hari' => $jadwal['hari'],
+                    'metode' => $jadwal['metode'],
+                    'tanggal' => $jadwal['tanggal'],
+                    'tahun_akademik_id' => $jadwal['tahun_akademik_id'],
+                    'created_by' => Auth::id(),
+                ]);
 
-        return redirect()->route('dosen.akademik.kelas-index')->with('success', 'Jadwal berhasil disimpan.');
+                $jadwalModel->kelas()->attach($jadwal['kelas_id']);
+                $jadwalModel->waktuKuliah()->attach($jadwal['waktu_id']);
+            }
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Gagal simpan jadwal: ' . $e->getMessage());
-        return redirect()->back()->with('error', 'Gagal simpan jadwal: ' . $e->getMessage());
+            DB::commit();
+
+            session()->forget('jadwal_preview');
+
+            return redirect()->route('dosen.akademik.kelas-index')->with('success', 'Jadwal berhasil disimpan.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal simpan jadwal: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal simpan jadwal: ' . $e->getMessage());
+        }
     }
-}
 
-public function rescheduleAll(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'tahun_akademik_id' => 'required|exists:tahun_akademiks,id',
-        'tanggal' => 'nullable|date',
-    ]);
+    public function rescheduleAll(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'tahun_akademik_id' => 'required|exists:tahun_akademiks,id',
+            'tanggal' => 'nullable|date',
+        ]);
 
-    if ($validator->fails()) {
-        return redirect()->back()->withErrors($validator)->withInput();
-    }
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
-    $tahunAkademikId = $request->tahun_akademik_id;
-    $tanggalMulai = $request->tanggal ?? now()->toDateString();
+        $tahunAkademikId = $request->tahun_akademik_id;
+        $tanggalMulai = $request->tanggal ?? now()->toDateString();
 
-    $waktuKuliahList = WaktuKuliah::all();
-    $ruangs = Ruang::pluck('id')->toArray();
-    $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $waktuKuliahList = WaktuKuliah::all();
+        $ruangs = Ruang::pluck('id')->toArray();
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
-    $jadwalExisting = JadwalKuliah::with(['waktuKuliah', 'kelas'])->where('tahun_akademik_id', $tahunAkademikId)->get();
+        $jadwalExisting = JadwalKuliah::with(['waktuKuliah', 'kelas'])->where('tahun_akademik_id', $tahunAkademikId)->get();
 
-    $jadwalCache = collect();
-    $jadwalReschedule = [];
+        $jadwalCache = collect();
+        $jadwalReschedule = [];
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
-        foreach ($jadwalExisting as $jadwal) {
-            $foundSlot = false;
+        try {
+            foreach ($jadwalExisting as $jadwal) {
+                $foundSlot = false;
 
-            foreach ($hariList as $hari) {
-                foreach ($ruangs as $ruang) {
-                    foreach ($waktuKuliahList as $waktu) {
-                        $jamMulai = $waktu->time_start;
-                        $jamSelesai = $waktu->time_ended;
+                foreach ($hariList as $hari) {
+                    foreach ($ruangs as $ruang) {
+                        foreach ($waktuKuliahList as $waktu) {
+                            $jamMulai = $waktu->time_start;
+                            $jamSelesai = $waktu->time_ended;
 
-                        $bentrokPreview = $this->cekBentrokPreview(
-                            $jadwalCache,
-                            $ruang,
-                            $hari,
-                            $jamMulai,
-                            $jamSelesai,
-                            $jadwal->dosen_id,
-                            $jadwal->kelas->first()->id ?? null
-                        );
+                            $bentrokPreview = $this->cekBentrokPreview(
+                                $jadwalCache,
+                                $ruang,
+                                $hari,
+                                $jamMulai,
+                                $jamSelesai,
+                                $jadwal->dosen_id,
+                                $jadwal->kelas->first()->id ?? null
+                            );
 
-                        $bentrokDb = JadwalKuliah::where('id', '!=', $jadwal->id)
-                            ->where('tahun_akademik_id', $tahunAkademikId)
-                            ->where('hari', $hari)
-                            ->where(function($query) use ($ruang, $jadwal, $jamMulai, $jamSelesai) {
-                                $query->where(function($q) use ($ruang, $jamMulai, $jamSelesai) {
-                                    $q->where('ruang_id', $ruang)
-                                        ->whereHas('waktuKuliah', function($wq) use ($jamMulai, $jamSelesai) {
-                                            $wq->where(function($wt) use ($jamMulai, $jamSelesai) {
-                                                $wt->where('time_start', '<', $jamSelesai)
-                                                    ->where('time_ended', '>', $jamMulai);
+                            $bentrokDb = JadwalKuliah::where('id', '!=', $jadwal->id)
+                                ->where('tahun_akademik_id', $tahunAkademikId)
+                                ->where('hari', $hari)
+                                ->where(function($query) use ($ruang, $jadwal, $jamMulai, $jamSelesai) {
+                                    $query->where(function($q) use ($ruang, $jamMulai, $jamSelesai) {
+                                        $q->where('ruang_id', $ruang)
+                                            ->whereHas('waktuKuliah', function($wq) use ($jamMulai, $jamSelesai) {
+                                                $wq->where(function($wt) use ($jamMulai, $jamSelesai) {
+                                                    $wt->where('time_start', '<', $jamSelesai)
+                                                        ->where('time_ended', '>', $jamMulai);
+                                                });
                                             });
-                                        });
-                                })
-                                ->orWhere(function($q) use ($jadwal, $jamMulai, $jamSelesai) {
-                                    $q->where('dosen_id', $jadwal->dosen_id)
-                                        ->whereHas('waktuKuliah', function($wq) use ($jamMulai, $jamSelesai) {
-                                            $wq->where(function($wt) use ($jamMulai, $jamSelesai) {
-                                                $wt->where('time_start', '<', $jamSelesai)
-                                                    ->where('time_ended', '>', $jamMulai);
+                                    })
+                                    ->orWhere(function($q) use ($jadwal, $jamMulai, $jamSelesai) {
+                                        $q->where('dosen_id', $jadwal->dosen_id)
+                                            ->whereHas('waktuKuliah', function($wq) use ($jamMulai, $jamSelesai) {
+                                                $wq->where(function($wt) use ($jamMulai, $jamSelesai) {
+                                                    $wt->where('time_start', '<', $jamSelesai)
+                                                        ->where('time_ended', '>', $jamMulai);
+                                                });
                                             });
-                                        });
+                                    })
+                                    ->orWhereHas('kelas', function($kq) use ($jadwal) {
+                                        $kq->where('kelas.id', $jadwal->kelas->first()->id ?? null);
+                                    });
                                 })
-                                ->orWhereHas('kelas', function($kq) use ($jadwal) {
-                                    $kq->where('kelas.id', $jadwal->kelas->first()->id ?? null);
-                                });
-                            })
-                            ->exists();
+                                ->exists();
 
-                        if ($bentrokPreview || $bentrokDb) {
-                            continue;
+                            if ($bentrokPreview || $bentrokDb) {
+                                continue;
+                            }
+
+                            // Slot bebas, simpan ke cache dan array reschedule
+                            $jadwalReschedule[] = [
+                                'id' => $jadwal->id,
+                                'ruang_id' => $ruang,
+                                'hari' => $hari,
+                                'waktu_id' => $waktu->id,
+                                'jam_mulai' => $jamMulai,
+                                'jam_selesai' => $jamSelesai,
+                            ];
+
+                            $jadwalCache->push([
+                                'hari' => $hari,
+                                'ruang_id' => $ruang,
+                                'dosen_id' => $jadwal->dosen_id,
+                                'kelas_id' => $jadwal->kelas->first()->id ?? null,
+                                'jam_mulai' => $jamMulai,
+                                'jam_selesai' => $jamSelesai,
+                            ]);
+
+                            $foundSlot = true;
+                            break 4; // keluar loop
                         }
-
-                        // Slot bebas, simpan ke cache dan array reschedule
-                        $jadwalReschedule[] = [
-                            'id' => $jadwal->id,
-                            'ruang_id' => $ruang,
-                            'hari' => $hari,
-                            'waktu_id' => $waktu->id,
-                            'jam_mulai' => $jamMulai,
-                            'jam_selesai' => $jamSelesai,
-                        ];
-
-                        $jadwalCache->push([
-                            'hari' => $hari,
-                            'ruang_id' => $ruang,
-                            'dosen_id' => $jadwal->dosen_id,
-                            'kelas_id' => $jadwal->kelas->first()->id ?? null,
-                            'jam_mulai' => $jamMulai,
-                            'jam_selesai' => $jamSelesai,
-                        ]);
-
-                        $foundSlot = true;
-                        break 4; // keluar loop
                     }
+                }
+
+                if (!$foundSlot) {
+                    // Tidak dapat slot baru, tetap jadwal lama
+                    $jadwalReschedule[] = [
+                        'id' => $jadwal->id,
+                        'ruang_id' => $jadwal->ruang_id,
+                        'hari' => $jadwal->hari,
+                        'waktu_id' => $jadwal->waktuKuliah->first()->id ?? null,
+                        'jam_mulai' => $jadwal->waktuKuliah->first()->time_start ?? null,
+                        'jam_selesai' => $jadwal->waktuKuliah->first()->time_ended ?? null,
+                    ];
+
+                    $jadwalCache->push([
+                        'hari' => $jadwal->hari,
+                        'ruang_id' => $jadwal->ruang_id,
+                        'dosen_id' => $jadwal->dosen_id,
+                        'kelas_id' => $jadwal->kelas->first()->id ?? null,
+                        'jam_mulai' => $jadwal->waktuKuliah->first()->time_start ?? null,
+                        'jam_selesai' => $jadwal->waktuKuliah->first()->time_ended ?? null,
+                    ]);
+
+                    Log::warning("Reschedule gagal menemukan slot baru untuk jadwal ID {$jadwal->id}");
                 }
             }
 
-            if (!$foundSlot) {
-                // Tidak dapat slot baru, tetap jadwal lama
-                $jadwalReschedule[] = [
-                    'id' => $jadwal->id,
-                    'ruang_id' => $jadwal->ruang_id,
-                    'hari' => $jadwal->hari,
-                    'waktu_id' => $jadwal->waktuKuliah->first()->id ?? null,
-                    'jam_mulai' => $jadwal->waktuKuliah->first()->time_start ?? null,
-                    'jam_selesai' => $jadwal->waktuKuliah->first()->time_ended ?? null,
-                ];
+            // Update DB jadwal sesuai hasil reschedule
+            foreach ($jadwalReschedule as $jadwalUpdate) {
+                $jadwalModel = JadwalKuliah::find($jadwalUpdate['id']);
+                if (!$jadwalModel) continue;
 
-                $jadwalCache->push([
-                    'hari' => $jadwal->hari,
-                    'ruang_id' => $jadwal->ruang_id,
-                    'dosen_id' => $jadwal->dosen_id,
-                    'kelas_id' => $jadwal->kelas->first()->id ?? null,
-                    'jam_mulai' => $jadwal->waktuKuliah->first()->time_start ?? null,
-                    'jam_selesai' => $jadwal->waktuKuliah->first()->time_ended ?? null,
-                ]);
+                $jadwalModel->ruang_id = $jadwalUpdate['ruang_id'];
+                $jadwalModel->hari = $jadwalUpdate['hari'];
+                $jadwalModel->save();
 
-                Log::warning("Reschedule gagal menemukan slot baru untuk jadwal ID {$jadwal->id}");
+                $jadwalModel->waktuKuliah()->sync([$jadwalUpdate['waktu_id']]);
             }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Jadwal berhasil diatur ulang tanpa bentrok.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal reschedule jadwal: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal reschedule jadwal: ' . $e->getMessage());
+            
         }
-
-        // Update DB jadwal sesuai hasil reschedule
-        foreach ($jadwalReschedule as $jadwalUpdate) {
-            $jadwalModel = JadwalKuliah::find($jadwalUpdate['id']);
-            if (!$jadwalModel) continue;
-
-            $jadwalModel->ruang_id = $jadwalUpdate['ruang_id'];
-            $jadwalModel->hari = $jadwalUpdate['hari'];
-            $jadwalModel->save();
-
-            $jadwalModel->waktuKuliah()->sync([$jadwalUpdate['waktu_id']]);
-        }
-
-        DB::commit();
-
-        return redirect()->back()->with('success', 'Jadwal berhasil diatur ulang tanpa bentrok.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Gagal reschedule jadwal: ' . $e->getMessage());
-        return redirect()->back()->with('error', 'Gagal reschedule jadwal: ' . $e->getMessage());
-        
     }
-}
 }
